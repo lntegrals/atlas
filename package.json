@@ -1,0 +1,19 @@
+{
+  "name": "atlas-of-ideas",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "client",
+    "server",
+    "shared",
+    "packages/pretext"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
+    "test": "npm run test -w shared"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -6,7 +6,7 @@
     "client",
     "server",
     "shared",
-    "packages/pretext"
+    "packages/*"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",

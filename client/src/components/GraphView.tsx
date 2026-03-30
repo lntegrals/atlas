@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from 'd3-force';
-import { zoom } from 'd3-zoom';
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, type SimulationLinkDatum, type SimulationNodeDatum } from 'd3-force';
+import { zoom, type D3ZoomEvent } from 'd3-zoom';
 import { select } from 'd3-selection';
-import type { AtlasGraphDTO } from '@atlas/shared';
+import type { AtlasEdge, AtlasGraphDTO, AtlasNode } from '@atlas/shared';
 import { buildStoryLayout, PretextLayoutManager } from '@atlas/shared';
 
 const textManager = new PretextLayoutManager();
 
-type Props = { graph: AtlasGraphDTO; communities: Map<string, number>; mode: 'overview' | 'story'; selectedId: string | null; onSelect: (id: string) => void; };
+type SimulationNode = AtlasNode & SimulationNodeDatum;
+type SimulationEdge = AtlasEdge & SimulationLinkDatum<SimulationNode>;
+
+type Props = {
+  graph: AtlasGraphDTO;
+  communities: Map<string, number>;
+  mode: 'overview' | 'story';
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+};
 
 export function GraphView({ graph, communities, mode, selectedId, onSelect }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -15,51 +24,71 @@ export function GraphView({ graph, communities, mode, selectedId, onSelect }: Pr
 
   useEffect(() => {
     if (mode !== 'overview') return;
-    const nodes = graph.nodes.map((n) => ({ ...n, x: Math.random() * 800, y: Math.random() * 600 }));
-    const sim = forceSimulation(nodes as any)
-      .force('charge', forceManyBody().strength(-80))
-      .force('link', forceLink(graph.edges as any).id((d: any) => d.id).distance(60))
-      .force('collide', forceCollide(18))
+
+    const nodes: SimulationNode[] = graph.nodes.map((node) => ({ ...node, x: Math.random() * 800, y: Math.random() * 600 }));
+    const edges: SimulationEdge[] = graph.edges.map((edge) => ({ ...edge }));
+
+    const sim = forceSimulation<SimulationNode>(nodes)
+      .force('charge', forceManyBody<SimulationNode>().strength(-80))
+      .force('link', forceLink<SimulationNode, SimulationEdge>(edges).id((node) => node.id).distance(60))
+      .force('collide', forceCollide<SimulationNode>(18))
       .force('center', forceCenter(450, 320))
       .alphaDecay(0.06)
       .on('tick', () => {
-        nodes.forEach((n: any) => positions.current.set(n.id, { x: n.x, y: n.y }));
+        nodes.forEach((node) => positions.current.set(node.id, { x: node.x ?? 0, y: node.y ?? 0 }));
         draw();
       });
+
     return () => sim.stop();
   }, [graph, mode]);
 
-  useEffect(() => { (async () => {
-    if (mode !== 'story' || !selectedId) return;
-    const story = await buildStoryLayout(graph, selectedId);
-    positions.current = story.positions;
-    draw();
-  })(); }, [mode, selectedId, graph]);
+  useEffect(() => {
+    (async () => {
+      if (mode !== 'story' || !selectedId) return;
+      const story = await buildStoryLayout(graph, selectedId);
+      positions.current = story.positions;
+      draw();
+    })();
+  }, [mode, selectedId, graph]);
 
   function draw() {
-    const svg = svgRef.current; if (!svg) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+
     const g = select(svg).select<SVGGElement>('g.scene');
     g.selectAll('*').remove();
-    graph.edges.forEach((e) => {
-      const s = positions.current.get(e.source); const t = positions.current.get(e.target); if (!s || !t) return;
-      g.append('line').attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y).attr('stroke', 'rgba(180,210,255,0.16)');
+
+    graph.edges.forEach((edge) => {
+      const source = positions.current.get(edge.source);
+      const target = positions.current.get(edge.target);
+      if (!source || !target) return;
+
+      g.append('line').attr('x1', source.x).attr('y1', source.y).attr('x2', target.x).attr('y2', target.y).attr('stroke', 'rgba(180,210,255,0.16)');
     });
-    graph.nodes.forEach((n) => {
-      const p = positions.current.get(n.id); if (!p) return;
-      const c = (communities.get(n.id) ?? 0) * 47 % 360;
-      g.append('circle').attr('cx', p.x).attr('cy', p.y).attr('r', selectedId===n.id ? 9 : 6).attr('fill', `hsl(${c} 75% 65%)`).on('click', () => onSelect(n.id));
-      const l = textManager.layout({ text: n.label, width: 140, fontSize: 12, lineHeight: 15, maxLines: 2 });
-      l.lines.forEach((line, i) => {
-        g.append('text').attr('x', p.x + 10).attr('y', p.y + i * l.lineHeight).attr('fill', 'rgba(245,248,255,0.88)').attr('font-size', 11).text(line);
+
+    graph.nodes.forEach((node) => {
+      const position = positions.current.get(node.id);
+      if (!position) return;
+
+      const color = ((communities.get(node.id) ?? 0) * 47) % 360;
+      g.append('circle').attr('cx', position.x).attr('cy', position.y).attr('r', selectedId === node.id ? 9 : 6).attr('fill', `hsl(${color} 75% 65%)`).on('click', () => onSelect(node.id));
+
+      const layout = textManager.layout({ text: node.label, width: 140, fontSize: 12, lineHeight: 15, maxLines: 2 });
+      layout.lines.forEach((line: string, index: number) => {
+        g.append('text').attr('x', position.x + 10).attr('y', position.y + index * layout.lineHeight).attr('fill', 'rgba(245,248,255,0.88)').attr('font-size', 11).text(line);
       });
     });
   }
 
   useEffect(() => {
-    const svg = svgRef.current; if (!svg) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+
     const scene = select(svg).select<SVGGElement>('g.scene');
-    const z = zoom<SVGSVGElement, unknown>().scaleExtent([0.4, 6]).on('zoom', (e) => scene.attr('transform', e.transform.toString()));
-    select(svg).call(z as any);
+    const z = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.4, 6])
+      .on('zoom', (event: D3ZoomEvent<SVGSVGElement, unknown>) => scene.attr('transform', event.transform.toString()));
+    select(svg).call(z as unknown as (selection: unknown) => void);
     draw();
   }, [graph, communities, selectedId]);
 

@@ -45,3 +45,9 @@ npm test
 - Frontend calls only backend `/api/*` routes.
 - The graph build is bounded for responsiveness (target 150–400 nodes).
 - If OpenAlex quota/rate limits occur, the app surfaces graceful errors.
+
+
+## Vercel deployment
+- Build command: `npm run build -w client`
+- Output directory: `client/dist`
+- API routes are served by `api/index.ts` (which reuses `server/src/app.ts`).

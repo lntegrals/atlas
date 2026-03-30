@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { AtlasGraphDTO } from '@atlas/shared';
-import { assignCommunities, buildClusterSummaries } from '@atlas/shared';
+import type { AtlasGraphDTO } from './lib/types';
+import { assignCommunities, buildClusterSummaries } from './lib/clustering';
 import { GraphView } from './components/GraphView';
 import { DetailsPanel } from './components/DetailsPanel';
 

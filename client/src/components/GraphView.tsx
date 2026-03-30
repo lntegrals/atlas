@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from 'd3-force';
 import { zoom } from 'd3-zoom';
 import { select } from 'd3-selection';
-import type { AtlasGraphDTO } from '@atlas/shared';
-import { buildStoryLayout, PretextLayoutManager } from '@atlas/shared';
+import type { AtlasGraphDTO } from '../lib/types';
+import { buildStoryLayout } from '../lib/storyLayout';
+import { PretextLayoutManager } from '../lib/textLayoutManager';
 
 const textManager = new PretextLayoutManager();
 

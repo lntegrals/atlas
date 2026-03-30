@@ -1,4 +1,5 @@
-import { PretextLayoutManager, type AtlasGraphDTO, type AtlasNode } from '@atlas/shared';
+import { PretextLayoutManager } from '../lib/textLayoutManager';
+import type { AtlasGraphDTO, AtlasNode } from '../lib/types';
 
 const tm = new PretextLayoutManager();
 

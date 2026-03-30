@@ -17,7 +17,7 @@ export function App() {
 
   const communities = useMemo(() => graph ? assignCommunities(graph) : new Map<string, number>(), [graph]);
   const summaries = useMemo(() => graph ? buildClusterSummaries(graph, communities) : [], [graph, communities]);
-  const selectedNode = graph?.nodes.find((n) => n.id === selectedId) ?? null;
+  const selectedNode = graph?.nodes.find((node) => node.id === selectedId) ?? null;
 
   async function search(topic: string) {
     setLoading(true); setError(null); setSelectedId(null);
@@ -34,10 +34,10 @@ export function App() {
     <h1>Atlas of Ideas</h1>
     <p>A multiscale knowledge atlas for papers, authors, institutions, and ideas.</p>
     <div className='searchRow'>
-      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder='Search a topic…'/>
+      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder='Search a topic…'/>
       <button onClick={() => search(query)}>Explore</button>
     </div>
-    <div className='examples'>{['diffusion models','CRISPR','reinforcement learning','topology optimization'].map((x)=><button key={x} onClick={()=>{setQuery(x); search(x);}}>{x}</button>)}</div>
+    <div className='examples'>{['diffusion models', 'CRISPR', 'reinforcement learning', 'topology optimization'].map((example) => <button key={example} onClick={() => { setQuery(example); search(example); }}>{example}</button>)}</div>
     {loading && <p>Building atlas…</p>}
     {error && <p className='error'>{error}</p>}
   </div>;
@@ -46,8 +46,8 @@ export function App() {
     <header>
       <strong>{activeQuery}</strong>
       <div>
-        <button onClick={() => setMode('overview')} className={mode==='overview'?'active':''}>Overview</button>
-        <button onClick={() => setMode('story')} className={mode==='story'?'active':''}>Story mode</button>
+        <button onClick={() => setMode('overview')} className={mode === 'overview' ? 'active' : ''}>Overview</button>
+        <button onClick={() => setMode('story')} className={mode === 'story' ? 'active' : ''}>Story mode</button>
         <button onClick={() => { setGraph(null); setMode('overview'); }}>New search</button>
       </div>
     </header>
